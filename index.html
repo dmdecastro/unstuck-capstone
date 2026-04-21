@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unstuck Capstone</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F7F5F0;
+    --surface: #EFECE5;
+    --surface2: #E8E4DB;
+    --text: #1A1916;
+    --muted: #6B6860;
+    --hint: #9C9A94;
+    --border: rgba(26,25,22,0.1);
+    --border-strong: rgba(26,25,22,0.18);
+    --accent: #2D5016;
+    --accent-bg: #EAF0E2;
+    --warm: #C4622D;
+    --warm-bg: #F5EBE4;
+    --nav-h: 56px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; font-size: 16px; }
+
+  body {
+    font-family: 'Geist', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    height: var(--nav-h);
+    background: rgba(247,245,240,0.85);
+    backdrop-filter: blur(20px) saturate(1.4);
+    -webkit-backdrop-filter: blur(20px) saturate(1.4);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center;
+    padding: 0 32px;
+    gap: 24px;
+  }
+
+  .nav-logo {
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-size: 1.05rem;
+    font-style: italic;
+    color: var(--text);
+    cursor: pointer;
+    letter-spacing: -0.01em;
+    flex-shrink: 0;
+    margin-right: 8px;
+  }
+
+  .nav-links {
+    display: flex; gap: 2px; list-style: none;
+    flex: 1; flex-wrap: wrap;
+  }
+
+  .nav-links a {
+    display: block;
+    padding: 5px 11px;
+    font-size: 0.775rem;
+    font-weight: 400;
+    letter-spacing: 0.01em;
+    color: var(--muted);
+    text-decoration: none;
+    border-radius: 20px;
+    transition: color 0.15s, background 0.15s;
+    white-space: nowrap;
+  }
+  .nav-links a:hover { color: var(--text); background: var(--surface); }
+  .nav-links a.active { color: var(--text); background: var(--surface2); font-weight: 500; }
+
+  /* PAGES */
+  .page { display: none; padding-top: var(--nav-h); }
+  .page.visible { display: block; }
+
+  /* CONTAINERS */
+  .wrap { max-width: 700px; margin: 0 auto; padding: 0 32px; }
+  .wrap-wide { max-width: 960px; margin: 0 auto; padding: 0 32px; }
+
+  /* HERO */
+  .hero {
+    padding: 80px 32px 64px;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+  .hero-eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 24px;
+  }
+  .hero-eyebrow::before {
+    content: '';
+    display: inline-block;
+    width: 20px; height: 1px;
+    background: var(--hint);
+  }
+
+  .hero h1 {
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-size: clamp(2.4rem, 5.5vw, 3.8rem);
+    font-weight: 400;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin-bottom: 24px;
+  }
+  .hero h1 em {
+    font-style: italic;
+    color: var(--warm);
+  }
+
+  .hero-desc {
+    font-size: 1.0rem;
+    color: var(--muted);
+    line-height: 1.75;
+    max-width: 520px;
+    margin-bottom: 40px;
+  }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    border-radius: 8px;
+    border: 1px solid var(--border-strong);
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .btn:hover { background: var(--surface); }
+  .btn.filled {
+    background: var(--text);
+    color: var(--bg);
+    border-color: var(--text);
+  }
+  .btn.filled:hover { background: #333; }
+  .btn svg { width: 14px; height: 14px; }
+
+  /* DIVIDER */
+  hr.light {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 0;
+  }
+
+  /* SECTIONS */
+  .section { padding: 64px 32px; }
+  .section-inner { max-width: 700px; margin: 0 auto; }
+  .section-inner.wide { max-width: 960px; }
+
+  .label {
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--hint);
+    margin-bottom: 16px;
+    display: block;
+  }
+
+  h2 {
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-size: clamp(1.6rem, 3vw, 2.2rem);
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    margin-bottom: 20px;
+  }
+  h2 em { font-style: italic; }
+
+  h3 {
+    font-size: 1.0rem;
+    font-weight: 500;
+    margin-bottom: 10px;
+    margin-top: 40px;
+  }
+
+  p {
+    color: var(--muted);
+    line-height: 1.8;
+    margin-bottom: 16px;
+    max-width: 620px;
+  }
+  p:last-child { margin-bottom: 0; }
+  p.full { max-width: none; }
+
+  /* TAGS */
+  .tag {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 400;
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    background: transparent;
+    margin: 3px;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .tag:hover { border-color: var(--border-strong); color: var(--text); }
+  .tag-accent { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+
+  /* CARDS */
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 28px; }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    transition: border-color 0.15s;
+  }
+  .card:hover { border-color: var(--border-strong); }
+  .card-num {
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-size: 2rem;
+    font-weight: 400;
+    color: var(--warm);
+    line-height: 1;
+    margin-bottom: 8px;
+    display: block;
+  }
+  .card h4 { font-size: 0.875rem; font-weight: 500; margin-bottom: 6px; }
+  .card p { font-size: 0.825rem; margin: 0; line-height: 1.65; }
+
+  /* BENTO */
+  .bento { display: grid; grid-template-columns: repeat(12, 1fr); gap: 12px; margin-top: 28px; }
+  .b1 { grid-column: span 12; }
+  .b6 { grid-column: span 6; }
+  .b4 { grid-column: span 4; }
+  .b8 { grid-column: span 8; }
+  @media (max-width: 640px) {
+    .b6, .b4, .b8 { grid-column: span 12; }
+  }
+  .bento-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+  }
+  .bento-card.dark {
+    background: var(--text);
+    color: var(--bg);
+    border-color: transparent;
+  }
+  .bento-card.dark h4 { color: var(--bg); }
+  .bento-card.dark p { color: rgba(247,245,240,0.6); }
+  .bento-card h4 { font-size: 0.875rem; font-weight: 500; margin-bottom: 8px; }
+  .bento-card p { font-size: 0.825rem; margin: 0; line-height: 1.65; max-width: none; }
+  .bento-big-num {
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-size: 3rem;
+    font-weight: 400;
+    color: var(--warm);
+    line-height: 1;
+    margin-bottom: 4px;
+    display: block;
+  }
+
+  /* PROSPECTUS BLOCKS */
+  .p-block { padding: 28px 0; border-bottom: 1px solid var(--border); }
+  .p-block:last-child { border-bottom: none; }
+  .p-block .p-label {
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--warm);
+    margin-bottom: 10px;
+    display: block;
+  }
+  .p-block h3 { margin-top: 0; font-size: 0.95rem; margin-bottom: 12px; }
+
+  /* TABLE */
+  .tbl-wrap { overflow-x: auto; margin-top: 28px; border-radius: 12px; border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  thead th {
+    text-align: left; padding: 12px 16px;
+    font-size: 0.72rem; font-weight: 500;
+    letter-spacing: 0.07em; text-transform: uppercase;
+    color: var(--hint);
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  tbody td {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    color: var(--muted);
+    vertical-align: top;
+    line-height: 1.6;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody td:first-child { color: var(--text); font-weight: 500; }
+
+  /* FINDINGS */
+  .finding {
+    display: flex; gap: 16px; padding: 20px 0;
+    border-bottom: 1px solid var(--border);
+    align-items: flex-start;
+  }
+  .finding:last-child { border-bottom: none; }
+  .f-num {
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-size: 1.4rem;
+    color: var(--hint);
+    line-height: 1;
+    flex-shrink: 0;
+    width: 28px;
+    padding-top: 2px;
+  }
+  .finding p { font-size: 0.9rem; margin: 0; }
+  .finding p strong { color: var(--text); font-weight: 500; }
+
+  /* CHART PLACEHOLDER */
+  .chart-ph {
+    background: var(--surface);
+    border: 1px dashed var(--border-strong);
+    border-radius: 12px;
+    padding: 48px 24px;
+    text-align: center;
+    margin: 20px 0;
+  }
+  .chart-ph p { font-size: 0.825rem; margin: 0; color: var(--hint); max-width: none; }
+  .chart-ph strong { display: block; color: var(--muted); font-weight: 500; font-size: 0.875rem; margin-bottom: 6px; }
+
+  /* SOLUTION STEPS */
+  .steps { margin-top: 28px; }
+  .step-row {
+    display: grid; grid-template-columns: 48px 1fr;
+    gap: 16px; padding: 20px 0;
+    border-bottom: 1px solid var(--border);
+    align-items: start;
+  }
+  .step-row:last-child { border-bottom: none; }
+  .step-n {
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-size: 1.5rem;
+    font-weight: 400;
+    color: var(--hint);
+    line-height: 1.1;
+  }
+  .step-row h4 { font-size: 0.9rem; font-weight: 500; margin-bottom: 6px; color: var(--text); }
+  .step-row p { font-size: 0.865rem; margin: 0; }
+
+  /* QUOTE */
+  .pull-quote {
+    border-left: 2px solid var(--surface2);
+    padding: 16px 24px;
+    margin: 36px 0;
+  }
+  .pull-quote p {
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-size: 1.2rem;
+    font-style: italic;
+    color: var(--text);
+    margin: 0;
+    max-width: none;
+    line-height: 1.55;
+  }
+
+  /* TAKEAWAYS */
+  .takeaways { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-top: 28px; }
+  .tway {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    background: var(--surface);
+  }
+  .tway .tw-num {
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-size: 0.9rem;
+    font-style: italic;
+    color: var(--hint);
+    margin-bottom: 8px;
+    display: block;
+  }
+  .tway h4 { font-size: 0.85rem; font-weight: 500; margin-bottom: 6px; color: var(--text); }
+  .tway p { font-size: 0.825rem; margin: 0; line-height: 1.65; }
+
+  /* REFLECTION */
+  .rfx-ph {
+    border: 1px dashed var(--border-strong);
+    border-radius: 12px;
+    padding: 64px 32px;
+    text-align: center;
+    margin-top: 32px;
+  }
+  .rfx-ph h3 { margin-top: 0; font-size: 1.0rem; color: var(--muted); margin-bottom: 8px; }
+  .rfx-ph p { font-size: 0.875rem; color: var(--hint); margin: 0; max-width: none; }
+
+  /* VIDEO */
+  .vid-block {
+    background: var(--text);
+    border-radius: 16px;
+    padding: 72px 32px;
+    text-align: center;
+    margin-top: 28px;
+    position: relative;
+    overflow: hidden;
+  }
+  .vid-block::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 50% 0%, rgba(196,98,45,0.15) 0%, transparent 60%);
+  }
+  .play-ring {
+    width: 60px; height: 60px;
+    border-radius: 50%;
+    border: 1px solid rgba(247,245,240,0.25);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 20px;
+    position: relative; z-index: 1;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .play-ring:hover { border-color: rgba(247,245,240,0.5); }
+  .play-ring svg { fill: var(--bg); width: 22px; height: 22px; margin-left: 3px; }
+  .vid-block h3 {
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-size: 1.4rem;
+    font-weight: 400;
+    color: var(--bg);
+    margin-bottom: 8px;
+    position: relative; z-index: 1;
+  }
+  .vid-block p { color: rgba(247,245,240,0.45); font-size: 0.875rem; margin: 0; max-width: none; position: relative; z-index: 1; }
+  .vid-btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    margin-top: 24px;
+    border: 1px solid rgba(247,245,240,0.2);
+    color: rgba(247,245,240,0.7);
+    background: transparent;
+    padding: 8px 18px;
+    border-radius: 8px;
+    font-size: 0.775rem;
+    font-family: 'Geist', sans-serif;
+    cursor: pointer;
+    position: relative; z-index: 1;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .vid-btn:hover { border-color: rgba(247,245,240,0.4); color: var(--bg); }
+
+  /* PAGE HEADER */
+  .ph {
+    padding: 56px 32px 48px;
+    border-bottom: 1px solid var(--border);
+  }
+  .ph-inner { max-width: 700px; margin: 0 auto; }
+  .ph-crumb {
+    font-size: 0.75rem; color: var(--hint);
+    margin-bottom: 12px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .ph h1 {
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    margin-bottom: 12px;
+  }
+  .ph p { font-size: 0.9rem; margin: 0; }
+
+  /* NAV LINKS LIST */
+  .site-links { list-style: none; margin-top: 20px; }
+  .site-links li a {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+    text-decoration: none;
+    color: var(--muted);
+    font-size: 0.9rem;
+    transition: color 0.15s;
+    cursor: pointer;
+  }
+  .site-links li a:hover { color: var(--text); }
+  .site-links li a svg { width: 14px; height: 14px; opacity: 0.4; }
+  .site-links li:last-child a { border-bottom: none; }
+
+  /* FOOTER */
+  footer {
+    padding: 40px 32px;
+    border-top: 1px solid var(--border);
+  }
+  .footer-inner { max-width: 700px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+  footer .ft-brand {
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-style: italic;
+    font-size: 0.95rem;
+    color: var(--text);
+  }
+  footer .ft-info { font-size: 0.78rem; color: var(--hint); }
+
+  /* INLINE NAV ITEMS */
+  .included-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 8px;
+    margin-top: 20px;
+  }
+  .inc-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 0.825rem;
+    color: var(--muted);
+    cursor: pointer;
+    background: var(--surface);
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .inc-item:hover { border-color: var(--border-strong); color: var(--text); }
+  .inc-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--warm); flex-shrink: 0; }
+
+  /* SOLUTION HERO BLOCK */
+  .sol-header {
+    background: var(--accent);
+    border-radius: 16px;
+    padding: 40px 36px;
+    margin-bottom: 40px;
+    color: var(--bg);
+  }
+  .sol-header h3 {
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-size: 1.5rem;
+    font-weight: 400;
+    color: #fff;
+    margin-top: 0;
+    margin-bottom: 12px;
+    letter-spacing: -0.01em;
+  }
+  .sol-header p { color: rgba(247,245,240,0.7); font-size: 0.9rem; margin: 0; max-width: none; line-height: 1.75; }
+
+  /* RESPONSIVE */
+  @media (max-width: 640px) {
+    nav { padding: 0 16px; gap: 12px; }
+    .nav-links a { padding: 4px 8px; font-size: 0.7rem; }
+    .hero, .section, .ph { padding-left: 20px; padding-right: 20px; }
+    footer { padding: 32px 20px; }
+  }
+
+  /* FADE IN */
+  .fade { opacity: 0; transform: translateY(12px); animation: up 0.5s ease forwards; }
+  .fade:nth-child(1) { animation-delay: 0.04s; }
+  .fade:nth-child(2) { animation-delay: 0.12s; }
+  .fade:nth-child(3) { animation-delay: 0.2s; }
+  .fade:nth-child(4) { animation-delay: 0.28s; }
+  @keyframes up { to { opacity: 1; transform: none; } }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="nav">
+  <span class="nav-logo" onclick="go('home')">Unstuck</span>
+  <ul class="nav-links">
+    <li><a id="n-home" href="#" onclick="go('home')" class="active">Home</a></li>
+    <li><a id="n-prospectus" href="#" onclick="go('prospectus')">Prospectus</a></li>
+    <li><a id="n-grid" href="#" onclick="go('grid')">Learning Grid</a></li>
+    <li><a id="n-data" href="#" onclick="go('data')">Data</a></li>
+    <li><a id="n-solution" href="#" onclick="go('solution')">Solution</a></li>
+    <li><a id="n-summary" href="#" onclick="go('summary')">Summary</a></li>
+    <li><a id="n-reflection" href="#" onclick="go('reflection')">Reflection</a></li>
+    <li><a id="n-video" href="#" onclick="go('video')">Video</a></li>
+  </ul>
+</nav>
+
+<!-- ═══════════ HOME ═══════════ -->
+<div class="page visible" id="p-home">
+  <div class="hero">
+    <p class="hero-eyebrow fade">BPS Capstone · 2026</p>
+    <h1 class="fade"><em>Unstuck</em> — Helping Young Adults Reconnect with Purpose and Daily Life</h1>
+    <p class="hero-desc fade">A research-based capstone project on why so many young adults feel stuck and what could actually help.</p>
+    <div class="fade" style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn filled" onclick="go('prospectus')">Read the project <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></button>
+      <button class="btn" onclick="go('video')">Watch presentation</button>
+    </div>
+  </div>
+
+  <hr class="light">
+
+  <!-- The Problem -->
+  <div class="section">
+    <div class="section-inner">
+      <span class="label">The Problem</span>
+      <h2>Something's quietly off for a lot of young adults.</h2>
+      <p>A lot of college students and recent grads describe the same feeling: showing up, doing the things, and still feeling completely disconnected from any sense of direction or meaning. It's not burnout, exactly. It's more like... nothing is landing.</p>
+      <p>This project started from that observation. Research in psychology and behavioral science is pretty clear that purpose, belonging, and daily structure are foundational to wellbeing and when those things slip away, motivation tends to collapse with them.</p>
+
+      <div class="bento" style="margin-top:32px;">
+        <div class="bento-card b6">
+          <span class="bento-big-num">73%</span>
+          <h4>College students who report feeling overwhelmed by daily demands</h4>
+          <p style="font-size:0.75rem;margin-top:6px;color:var(--hint);">NCHA campus data placeholder for final citation</p>
+        </div>
+        <div class="bento-card b6">
+          <span class="bento-big-num">60%</span>
+          <h4>Feel disconnected from any clear sense of purpose or direction</h4>
+          <p style="font-size:0.75rem;margin-top:6px;color:var(--hint);">Placeholder source will be cited in final version</p>
+        </div>
+        <div class="bento-card b4">
+          <span class="bento-big-num">1 in 3</span>
+          <h4>Recent grads describe feeling "lost" after finishing their degree</h4>
+        </div>
+        <div class="bento-card dark b8">
+          <h4>Most mental health resources miss this group entirely.</h4>
+          <p>They cluster at the crisis end of the spectrum. The vast middle people who aren't in crisis but definitely aren't thriving goes largely unaddressed.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="light">
+
+  <!-- Why It Matters -->
+  <div class="section">
+    <div class="section-inner">
+      <span class="label">Why It Matters</span>
+      <h2>The stakes are real, even when it doesn't look like a crisis.</h2>
+      <p>Feeling stuck isn't just uncomfortable it compounds. It affects mental health, pulls people away from relationships, makes even small tasks feel impossible, and shapes the habits and identities that people carry forward for years.</p>
+      <p>The 18-28 window is a genuinely pivotal developmental stretch. The habits, mindsets, and coping strategies formed here tend to stick. That makes it exactly the right moment to offer something useful.</p>
+
+      <div class="cards">
+        <div class="card">
+          <h4>Mental health</h4>
+          <p>Disconnection from purpose correlates strongly with depression, anxiety, and chronic burnout during formative years.</p>
+        </div>
+        <div class="card">
+          <h4>Social belonging</h4>
+          <p>People who feel stuck often withdraw from relationships losing the connection that's essential to resilience.</p>
+        </div>
+        <div class="card">
+          <h4>Daily function</h4>
+          <p>Without structure and direction, small tasks become overwhelming. The cycle reinforces itself.</p>
+        </div>
+        <div class="card">
+          <h4>Long-term trajectory</h4>
+          <p>Early intervention can redirect habits and identities in ways that matter for decades.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="light">
+
+  <!-- What's Included -->
+  <div class="section">
+    <div class="section-inner">
+      <span class="label">What's on this site</span>
+      <h2>The full story, from question to answer.</h2>
+      <p>This site walks through the entire arc of the project the problem, the research, the courses that shaped the thinking, and the solution that came out of it all.</p>
+      <div class="included-grid">
+        <div class="inc-item" onclick="go('prospectus')"><span class="inc-dot"></span>Project Prospectus</div>
+        <div class="inc-item" onclick="go('grid')"><span class="inc-dot"></span>Course Learning Grid</div>
+        <div class="inc-item" onclick="go('data')"><span class="inc-dot"></span>Research & Data</div>
+        <div class="inc-item" onclick="go('solution')"><span class="inc-dot"></span>Proposed Solution</div>
+        <div class="inc-item" onclick="go('summary')"><span class="inc-dot"></span>Project Summary</div>
+        <div class="inc-item" onclick="go('reflection')"><span class="inc-dot"></span>Reflection</div>
+        <div class="inc-item" onclick="go('video')"><span class="inc-dot"></span>Presentation Video</div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="footer-inner">
+      <span class="ft-brand">Unstuck</span>
+      <span class="ft-info">BPS Capstone · Matthew De Castro · UNC Greensboro · 2026</span>
+    </div>
+  </footer>
+</div>
+
+<!-- ═══════════ PROSPECTUS ═══════════ -->
+<div class="page" id="p-prospectus">
+  <div class="ph">
+    <div class="ph-inner">
+      <div class="ph-crumb">Home <span>›</span> Project Prospectus</div>
+      <h1>Project Prospectus</h1>
+      <p>The initial framing what I set out to investigate, why it matters, and where the thinking started.</p>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-inner">
+
+      <div class="p-block">
+        <span class="p-label">Topic</span>
+        <h3>Young adult disconnection and the search for purpose</h3>
+        <p class="full">A problem I've been noticing is the influx of young adults my age who have been feeling lost and completely unsure about where their lives are headed. Initially, I believed this was a problem only I was facing but it turns out that many people in my generation are going through the same things. What makes it worse is that there is no open discussion about this, so there are no open solutions to the many problems we share.</p>
+        <p class="full">Feeling stuck or behind never feels good. When you let those feelings linger, you begin to lose motivation and question your self-worth. That is not living. My focus is to explore the ways young adults can reconnect with their sense of purpose and hopefully find a path to becoming a better version of themselves.</p>
+      </div>
+
+      <div class="p-block">
+        <span class="p-label">Main Question</span>
+        <h3>What can I develop to help young adults feel less stuck and more connected to their purpose and daily lives?</h3>
+        <p class="full">This matters to me because there is a misconception that people are just lazy. In reality, people lack the resources to achieve their own piece of contentment. Most of the time, people are just overwhelmed and afraid of making the wrong choices. On top of that, they are burdened with the pressures of social media, social circles, and other external expectations.</p>
+        <p class="full">That build-up makes it very difficult for "lost" individuals to know where to begin. Understanding this problem helps me think of ways it could be addressed only in the most realistic and supportive way possible.</p>
+      </div>
+
+      <div class="p-block">
+        <span class="p-label">Why This Matters</span>
+        <h3>This is the time people need the most support, not judgement.</h3>
+        <p class="full">Every day, people walk past thousands of others not knowing what's going on inside their heads almost as if we're supposed to pretend that everything is okay. Truthfully, everyone is struggling with something. For people around my age, we're scrambling to balance school, finances, personal relationships, and constantly worrying about our future plans.</p>
+        <p class="full">This stage in our lives feels as though we should already know what we're supposed to be doing. That kind of pressure can be very discouraging. I want this project to help people feel and believe that they still have value and potential especially when they don't have everything figured out yet.</p>
+      </div>
+
+      <div class="p-block">
+        <span class="p-label">Research Connection</span>
+        <h3>Research that challenges norms and centers real experiences</h3>
+        <p class="full">The research I've done relates to this project because it not only helps me understand the developing mind of the human psyche the articles also challenge social norms and embrace themes that would be considered taboo. Studies show that programs focused on connection and belonging reduce symptoms of depression and loneliness in college students (Costello et al., 2022). Arnett (2000) emphasizes that exploring one's identity and sitting with uncertainty are part of a distinct life stage for emerging adults, which explains why so many young adults feel stuck during this transition. Research also shows that having a sense of purpose and mission strengthens mental health and well-being among young adults (Chen et al., 2019).</p>
+        <p class="full">I'm especially interested in understanding the emotional and social factors behind what causes people to feel stuck, have fears of failure, and make comparisons of themselves to others. External factors like social media and the pressure to succeed are especially important to recognize for this project. These different components will help me identify solutions that are practical and could develop into meaningful routines methods that give young adults the chance to better understand themselves.</p>
+        <div style="margin-top:16px;flex-wrap:wrap;display:flex;">
+          <span class="tag tag-accent">Costello et al., 2022</span>
+          <span class="tag tag-accent">Arnett, 2000</span>
+          <span class="tag tag-accent">Chen et al., 2019</span>
+          <span class="tag tag-accent">Emerging adulthood</span>
+          <span class="tag tag-accent">Social media & external pressure</span>
+          <span class="tag tag-accent">Identity & belonging</span>
+        </div>
+      </div>
+
+      <div class="p-block">
+        <span class="p-label">Early Ideas for a Solution</span>
+        <h3>A calm, supportive digital resource something you can just open on your phone</h3>
+        <p class="full">I believe this project would become some sort of digital resource. I want this service to feel calm, supportive, and real. There are already similar services that provide a real human connection online, so this will work to an extent. I can imagine it including simple guidance that helps people reflect and have introspective analyses of themselves. The goal is to take small steps and develop change over time.</p>
+        <p class="full">I can see this project being something people can just open on their phones an easy resource that slowly guides people through understanding who they really are and what they want, then developing small goals to orient themselves into a more meaningful life. This project is aimed to remind young adults that it is okay to not have everything figured out, and that failure is just redirection.</p>
+      </div>
+
+    </div>
+  </div>
+  <footer><div class="footer-inner"><span class="ft-brand">Unstuck</span><span class="ft-info">BPS Capstone · Matthew De Castro · 2026</span></div></footer>
+</div>
+
+<!-- ═══════════ LEARNING GRID ═══════════ -->
+<div class="page" id="p-grid">
+  <div class="ph">
+    <div class="ph-inner">
+      <div class="ph-crumb">Home <span>›</span> Course Learning Grid</div>
+      <h1>Course Learning Grid</h1>
+      <p>How core BPS concepts shaped my understanding of the problem and my specific plan to apply each one to the project.</p>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-inner wide">
+      <span class="label">Overview</span>
+      <h2>Six concepts, one project.</h2>
+      <p>Each of these core course concepts directly connects to the problem of young adults feeling stuck and disconnected. The grid below shows how the concept relates to the problem, and the concrete steps I planned to apply it to my work.</p>
+
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:18%;">Core Concept</th>
+              <th style="width:38%;">How it connects to the problem</th>
+              <th style="width:44%;">My specific plan to apply it</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1. Design Thinking<br><span style="font-weight:400;color:var(--hint);font-size:0.8rem;">Empathy, defining the problem, ideation, prototyping, testing</span></td>
+              <td>This project is human-centered, so it requires empathetic understanding to solve the problem. Many young adults aren't lazy they're lost about which direction to take, while being pressured to decide fast by external forces. Design thinking centers the focus on the needs of others based on their experiences, rather than guessing.</td>
+              <td>Develop 2-3 ideas for the project, such as a reflection tool or a guided routine. Interview a few individuals on which idea(s) feel the most helpful and why. Revise solutions based on their feedback.</td>
+            </tr>
+            <tr>
+              <td>2. Systems Thinking<br><span style="font-weight:400;color:var(--hint);font-size:0.8rem;">Analyzing patterns and connections within a system</span></td>
+              <td>The feeling of being stuck is heavily influenced by outside forces like social media or people within a direct community. Systems thinking breaks down the process to find root causes, helping me understand how these factors connect and affect each other. It also puts this issue in a large-scale perspective rather than treating it as just an individual's personal problem.</td>
+              <td>Pinpoint main causes that make young adults feel stuck isolation, pressure, lack of structure, negative self-talk. Identify feedback loops, like how low motivation leads to less action, which then causes more self-criticism. Use this to decide where a solution could make the biggest impact.</td>
+            </tr>
+            <tr>
+              <td>3. Global Awareness &amp; Intercultural Competence<br><span style="font-weight:400;color:var(--hint);font-size:0.8rem;">Understanding different perspectives, identities, and lived experiences</span></td>
+              <td>Each person starts and experiences life differently. This project will be centered on being open-minded to all struggles and experiences, as nobody's journey is ever equal.</td>
+              <td>Gather research responses from people of different backgrounds to ensure variety and hopefully influence others to seek help just as others before them did.</td>
+            </tr>
+            <tr>
+              <td>4. Understanding Data<br><span style="font-weight:400;color:var(--hint);font-size:0.8rem;">Identifying, evaluating, and using data to support a problem and solution</span></td>
+              <td>Understanding data is imperative for this project. It requires evidence to follow trends and build a better understanding of how common depressive feelings are among young adults. This provides accurate solutions and builds credibility around the project.</td>
+              <td>Gather both qualitative and quantitative data to supplement the research and develop solutions based on trends within the findings. This will be done through surveys or short interviews.</td>
+            </tr>
+            <tr>
+              <td>5. Contemporary Media Literacies<br><span style="font-weight:400;color:var(--hint);font-size:0.8rem;">Evaluating media messages and communicating effectively through media</span></td>
+              <td>Many young adults develop their identity through the values given to them, but most importantly the things they see in their daily lives. Understanding media's influence on the problem helps me then develop ideas on how to carefully communicate solutions to my audience.</td>
+              <td>Study the kinds of content young adults are consuming on social media, specifically around productivity and self-worth. Start thinking about what media format would work best a digital guide or supportive social content that informs rather than overwhelms.</td>
+            </tr>
+            <tr>
+              <td>6. Self-Awareness<br><span style="font-weight:400;color:var(--hint);font-size:0.8rem;">Reflecting on values, strengths, experiences, and personal perspective</span></td>
+              <td>As I'm nearing the end of my time at UNC Greensboro, the urgency of starting my career and finding myself are heightened more than ever. Self-awareness calls for reflecting on multiple perspectives so I'm not stuck thinking one way. In reflection, I recognize my strengths and how I can apply them to help others through this project.</td>
+              <td>Do a life audit to identify wins, losses, and the root issues behind the losses. Use those findings to see where people relate or differ then tailor solutions to the needs of others.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>How to read this grid</h3>
+      <p>Each row is a core concept from the BPS curriculum. The middle column explains how that concept directly relates to the problem of young adults feeling stuck. The right column shows the concrete, specific plan to apply that concept to this project not just in theory, but in practice. Together, these six concepts form the intellectual foundation the entire capstone is built on.</p>
+    </div>
+  </div>
+  <footer><div class="footer-inner"><span class="ft-brand">Unstuck</span><span class="ft-info">BPS Capstone · Matthew De Castro · 2026</span></div></footer>
+</div>
+
+<!-- ═══════════ DATA ═══════════ -->
+<div class="page" id="p-data">
+  <div class="ph">
+    <div class="ph-inner">
+      <div class="ph-crumb">Home <span>›</span> Data & Research</div>
+      <h1>Research & Data</h1>
+      <p>The key findings, themes, and sources that shaped the project's understanding of the problem.</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-inner">
+      <span class="label">Research approach</span>
+      <h2>Secondary research + reflective observation.</h2>
+      <p>This project drew on a combination of secondary research peer-reviewed articles, published datasets, institutional reports alongside informal primary observations from peer conversations and reflective journaling. The goal was to synthesize what's already known about young adult disconnection and evaluate its implications for a practical solution.</p>
+      <p>Research spanned four primary themes, each shedding light on a different dimension of the problem.</p>
+
+      <div class="cards">
+        <div class="card"><h4>Psychology of purpose</h4><p>Why humans need meaning to function and what happens when that need goes unmet.</p></div>
+        <div class="card"><h4>Mental health trends</h4><p>Data on rising anxiety, depression, and burnout among 18-26 year olds from campus surveys and national health reports.</p></div>
+        <div class="card"><h4>Habit & routine</h4><p>Behavioral science on how daily structure and small habits contribute to emotional stability and forward motion.</p></div>
+        <div class="card"><h4>Existing interventions</h4><p>A landscape review of current tools and programs for stuck young adults and an honest read of their gaps.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="light">
+
+  <div class="section">
+    <div class="section-inner">
+      <span class="label">By the numbers</span>
+      <h2>What the data shows.</h2>
+
+      <div class="bento">
+        <div class="bento-card b4">
+          <span class="bento-big-num">73%</span>
+          <h4>Report feeling overwhelmed</h4>
+          <p>College students describing difficulty managing demands of daily life</p>
+        </div>
+        <div class="bento-card b4">
+          <span class="bento-big-num">60%</span>
+          <h4>Lack of clear purpose</h4>
+          <p>Feel disconnected from any meaningful direction in daily life</p>
+        </div>
+        <div class="bento-card b4">
+          <span class="bento-big-num">41%</span>
+          <h4>Routine struggles</h4>
+          <p>Significant difficulty maintaining basic daily structure</p>
+        </div>
+      </div>
+      <p style="font-size:0.75rem;color:var(--hint);margin-top:10px;max-width:none;">Placeholder statistics final figures will reflect cited research sources.</p>
+
+      <div class="chart-ph" style="margin-top:32px;">
+        <strong>Chart Rising anxiety rates among 18-26 year olds (2015-2024)</strong>
+        <p>Bar or line chart will be added here showing longitudinal data from NCHA or equivalent source.</p>
+      </div>
+      <div class="chart-ph">
+        <strong>Chart Breakdown of reported "stuck" experiences by category</strong>
+        <p>Donut chart showing primary causes: academic pressure, social isolation, lack of direction, identity uncertainty, etc.</p>
+      </div>
+    </div>
+  </div>
+
+  <hr class="light">
+
+  <div class="section">
+    <div class="section-inner">
+      <span class="label">Key findings</span>
+      <h2>What the research actually revealed.</h2>
+
+      <div class="finding">
+        <span class="f-num">01</span>
+        <p><strong>Purpose is a fundamental psychological need, not a nice-to-have.</strong> Deci and Ryan's Self-Determination Theory identifies autonomy, competence, and relatedness as basic human needs. When those go unmet as they often do during post-secondary transitions motivation and wellbeing deteriorate in predictable ways.</p>
+      </div>
+      <div class="finding">
+        <span class="f-num">02</span>
+        <p><strong>The 18-28 window is uniquely vulnerable and uniquely pivotal.</strong> Arnett's emerging adulthood research identifies this as a distinct developmental stage defined by identity exploration, instability, and possibility. Without support, the instability tends to dominate.</p>
+      </div>
+      <div class="finding">
+        <span class="f-num">03</span>
+        <p><strong>Small, consistent actions compound into real identity change.</strong> Clear and others in behavioral research have shown that tiny habits done consistently do more for a sense of agency than large, infrequent efforts. This has direct design implications.</p>
+      </div>
+      <div class="finding">
+        <span class="f-num">04</span>
+        <p><strong>Most resources miss the "stuck but not in crisis" population.</strong> A landscape review of mental health apps, campus programs, and self-help tools found a significant gap: almost all are oriented toward clinical intervention or peak performance. Young adults who are simply adrift go largely unserved.</p>
+      </div>
+      <div class="finding">
+        <span class="f-num">05</span>
+        <p><strong>Language and tone are functional, not just cosmetic.</strong> Research on help-seeking behavior shows young adults are significantly less likely to engage with resources that feel clinical or judgmental. Warmth and brevity aren't aesthetic choices they affect whether people actually use something.</p>
+      </div>
+
+      <h3>Source types consulted</h3>
+      <div style="margin-top:12px;flex-wrap:wrap;display:flex;">
+        <span class="tag">Peer-reviewed articles</span>
+        <span class="tag">NCHA mental health surveys</span>
+        <span class="tag">APA reports</span>
+        <span class="tag">Self-Determination Theory lit</span>
+        <span class="tag">Behavioral design texts</span>
+        <span class="tag">Arnett emerging adulthood</span>
+        <span class="tag">HCD case studies</span>
+        <span class="tag">App landscape review</span>
+      </div>
+    </div>
+  </div>
+  <footer><div class="footer-inner"><span class="ft-brand">Unstuck</span><span class="ft-info">BPS Capstone · Matthew De Castro · 2026</span></div></footer>
+</div>
+
+<!-- ═══════════ SOLUTION ═══════════ -->
+<div class="page" id="p-solution">
+  <div class="ph">
+    <div class="ph-inner">
+      <div class="ph-crumb">Home <span>›</span> Solution</div>
+      <h1>The Proposed Solution</h1>
+      <p>A human-centered tool designed specifically for young adults who feel stuck built around the experience of being adrift, not the experience of being in crisis.</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-inner">
+
+      <div class="sol-header">
+        <h3>The Unstuck Framework</h3>
+        <p>A guided, low-barrier digital or print tool that helps young adults identify where they're stuck, reconnect with what matters to them, and take small, meaningful steps forward without overwhelming them in the process.</p>
+      </div>
+
+      <span class="label">Who it's for</span>
+      <h2>Designed for the vast, underserved middle.</h2>
+      <p>Not for people in clinical crisis for the much larger group getting by but who've lost their sense of direction, energy, or connection to what they actually care about.</p>
+
+      <div class="cards">
+        <div class="card"><h4>College students</h4><p>Mid-degree or approaching graduation feeling pressure, uncertainty, and disconnection from why they started.</p></div>
+        <div class="card"><h4>Recent graduates</h4><p>Navigating the gap between school and "real life," often without the structure they relied on for years.</p></div>
+        <div class="card"><h4>Young adults in transition</h4><p>Changing careers, cities, relationships, or identities and struggling to stay grounded through it.</p></div>
+      </div>
+
+      <h3 style="margin-top:48px;">How it works three phases</h3>
+      <p>The framework is organized around three sequential, self-paced phases. Each takes roughly two to four weeks. Users can return to any phase as needed.</p>
+
+      <div class="steps">
+        <div class="step-row">
+          <span class="step-n">01</span>
+          <div>
+            <h4>Orient name where you are</h4>
+            <p>Short, non-clinical reflection prompts that help users identify the specific texture of their stuck-ness. Is it about direction? Energy? Relationships? Identity? The goal is clarity, not diagnosis moving from a vague feeling to a more specific, workable understanding of what's actually going on.</p>
+          </div>
+        </div>
+        <div class="step-row">
+          <span class="step-n">02</span>
+          <div>
+            <h4>Anchor reconnect with what matters</h4>
+            <p>Values-based and curiosity-based activities that help users reconnect with things they genuinely care about independent of what they "should" care about. Drawn from Self-Determination Theory, this phase rebuilds intrinsic motivation from the inside rather than imposing external goals.</p>
+          </div>
+        </div>
+        <div class="step-row">
+          <span class="step-n">03</span>
+          <div>
+            <h4>Move one small step</h4>
+            <p>A daily micro-habit structure that translates values into small, concrete, sustainable actions. Based on behavioral design principles, this phase is about making forward movement feel achievable building momentum through consistency, not intensity.</p>
+          </div>
+        </div>
+      </div>
+
+      <h3>Core design principles</h3>
+      <div style="margin-top:12px;flex-wrap:wrap;display:flex;">
+        <span class="tag tag-accent">Warm, not clinical</span>
+        <span class="tag tag-accent">Brief, not burdensome</span>
+        <span class="tag tag-accent">Self-paced</span>
+        <span class="tag tag-accent">Evidence-based</span>
+        <span class="tag tag-accent">Non-prescriptive</span>
+        <span class="tag tag-accent">Free or low-cost</span>
+        <span class="tag tag-accent">Mobile-friendly</span>
+        <span class="tag tag-accent">Inclusive design</span>
+      </div>
+
+      <h3>Why it could help</h3>
+      <p class="full">The Unstuck Framework closes several gaps that current resources don't. It meets users at the level of mild-to-moderate disconnection rather than crisis. It uses language and tone calibrated for this specific population. It's grounded in mechanisms purpose, self-determination, habit formation that research has shown actually work.</p>
+      <p class="full">Most importantly, it treats young adults as capable people who know themselves and just need a structured, supportive process to hear themselves more clearly.</p>
+    </div>
+  </div>
+  <footer><div class="footer-inner"><span class="ft-brand">Unstuck</span><span class="ft-info">BPS Capstone · Matthew De Castro · 2026</span></div></footer>
+</div>
+
+<!-- ═══════════ SUMMARY ═══════════ -->
+<div class="page" id="p-summary">
+  <div class="ph">
+    <div class="ph-inner">
+      <div class="ph-crumb">Home <span>›</span> Summary</div>
+      <h1>Project Summary</h1>
+      <p>What the research and project mean, taken together and a preliminary answer to the central question.</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-inner">
+      <span class="label">What was learned</span>
+      <h2>The full picture.</h2>
+      <p>This project began with a question rooted in personal observation and social concern: why do so many young adults feel stuck, and what could actually help? Over the course of the research and design process, that question became both more complex and more answerable.</p>
+      <p>What became clear is that feeling stuck isn't a character flaw or a phase to wait out. It's a predictable outcome of unmet psychological needs for autonomy, connection, and competence in a life stage that's genuinely difficult and dramatically underserved. Understanding this reframes the problem from "what's wrong with these young adults" to "what conditions would actually help them?"</p>
+
+      <div class="pull-quote">
+        <p>"Young adults don't need to be fixed. They need to be heard, supported, and given a small enough entry point to start moving again."</p>
+      </div>
+
+      <h3>Preliminary answer to the project question</h3>
+      <p class="full">What helps young adults reconnect with purpose and re-engage with daily life when they feel stuck? Based on the research, the most meaningful answer points to three things working together: <strong style="color:var(--text);font-weight:500;">clarity about where they are</strong> (naming the specific nature of their disconnection), <strong style="color:var(--text);font-weight:500;">reconnection with what genuinely matters</strong> (rebuilding intrinsic motivation), and <strong style="color:var(--text);font-weight:500;">small, consistent actions</strong> that generate a sense of agency and forward movement.</p>
+      <p class="full">No single app, workshop, or book does all three well for this population. The Unstuck Framework is a preliminary attempt to design something that could.</p>
+
+      <h3 style="margin-top:48px;">Final takeaways</h3>
+      <div class="takeaways">
+        <div class="tway"><span class="tw-num">one</span><h4>The problem is real and underaddressed</h4><p>Mental health resources cluster at the crisis end. The vast middle ground people who aren't in crisis but aren't thriving either is largely neglected.</p></div>
+        <div class="tway"><span class="tw-num">two</span><h4>Purpose is a psychological necessity</h4><p>When it's absent, everything else in daily life becomes harder to sustain. This isn't abstract it's functional.</p></div>
+        <div class="tway"><span class="tw-num">three</span><h4>Small steps matter more than they seem</h4><p>Tiny, sustainable actions compound into meaningful identity and habit change. Momentum beats intensity.</p></div>
+        <div class="tway"><span class="tw-num">four</span><h4>Design and tone are functional, not cosmetic</h4><p>How a tool speaks to its users determines whether they engage at all. Warmth is a feature, not decoration.</p></div>
+        <div class="tway"><span class="tw-num">five</span><h4>This population deserves investment</h4><p>Young adults 1828 are at a pivotal developmental juncture. The support structures available haven't kept pace with the complexity of that moment.</p></div>
+        <div class="tway"><span class="tw-num">six</span><h4>This is a beginning, not an ending</h4><p>The Unstuck Framework needs further testing, refinement, and input from the people it's meant to serve. This project is a starting point.</p></div>
+      </div>
+    </div>
+  </div>
+  <footer><div class="footer-inner"><span class="ft-brand">Unstuck</span><span class="ft-info">BPS Capstone · Matthew De Castro · 2026</span></div></footer>
+</div>
+
+<!-- ═══════════ REFLECTION ═══════════ -->
+<div class="page" id="p-reflection">
+  <div class="ph">
+    <div class="ph-inner">
+      <div class="ph-crumb">Home <span>›</span> Reflection</div>
+      <h1>Final Reflection</h1>
+      <p>A personal account of the capstone experience what it taught me, what challenged me, and what I carry forward.</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-inner">
+      <span class="label">Coming soon</span>
+      <h2>Reflection in progress.</h2>
+      <p>The final written reflection is being completed and will be uploaded here. It will address what I learned about the topic and about myself as a thinker, what challenged me, what I'd do differently, and what I carry into professional life from this work.</p>
+
+      <div class="cards" style="margin-top:28px;">
+        <div class="card"><h4>What I learned</h4><p>About the topic, the research process, and myself as a thinker and practitioner.</p></div>
+        <div class="card"><h4>What challenged me</h4><p>Moments of uncertainty, productive frustration, and unexpected complexity that shaped the work.</p></div>
+        <div class="card"><h4>What I'd do differently</h4><p>An honest look at this project's limitations and the paths I'd explore with more time.</p></div>
+        <div class="card"><h4>What I carry forward</h4><p>The insights and convictions from this project that will travel with me into professional life.</p></div>
+      </div>
+
+      <div class="rfx-ph">
+        <h3>Reflection will be posted here.</h3>
+        <p>Check back for the full written account of this capstone experience.</p>
+      </div>
+    </div>
+  </div>
+  <footer><div class="footer-inner"><span class="ft-brand">Unstuck</span><span class="ft-info">BPS Capstone · Matthew De Castro · 2026</span></div></footer>
+</div>
+
+<!-- ═══════════ VIDEO ═══════════ -->
+<div class="page" id="p-video">
+  <div class="ph">
+    <div class="ph-inner">
+      <div class="ph-crumb">Home <span>›</span> Presentation Video</div>
+      <h1>Presentation Video</h1>
+      <p>A recorded walk-through of the full project problem, research, solution, key takeaways.</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-inner">
+      <span class="label">Video presentation</span>
+      <h2>Watch the capstone presentation.</h2>
+      <p>The video walks through the full arc of this project. It's designed to be accessible to a general audience no prior familiarity with the BPS program or this topic required. Approximately [X] minutes. A written summary is also on the <a href="#" onclick="go('summary')" style="color:var(--text);text-decoration:underline;text-underline-offset:3px;">Summary page</a>.</p>
+
+      <div class="vid-block">
+        <div class="play-ring">
+          <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        </div>
+        <h3>Capstone Presentation</h3>
+        <p>Video will be embedded or linked here upon completion.</p>
+        <button class="vid-btn">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          Open in new tab
+        </button>
+      </div>
+
+      <div class="cards" style="margin-top:32px;">
+        <div class="card"><h4>What's covered</h4><p>Introduction · Problem · Research & Data · Proposed Solution · Summary & Takeaways</p></div>
+        <div class="card"><h4>Duration</h4><p>Approximately [X] minutes. Designed to be concise and accessible.</p></div>
+        <div class="card"><h4>Audience</h4><p>BPS faculty, peers, and anyone reviewing this capstone for professional or academic purposes.</p></div>
+      </div>
+    </div>
+  </div>
+  <footer><div class="footer-inner"><span class="ft-brand">Unstuck</span><span class="ft-info">BPS Capstone · Matthew De Castro · 2026</span></div></footer>
+</div>
+
+<script>
+  const IDS = ['home','prospectus','grid','data','solution','summary','reflection','video'];
+
+  function go(id) {
+    IDS.forEach(p => {
+      document.getElementById('p-' + p).classList.remove('visible');
+      const el = document.getElementById('n-' + p);
+      if (el) el.classList.remove('active');
+    });
+    document.getElementById('p-' + id).classList.add('visible');
+    const el = document.getElementById('n-' + id);
+    if (el) el.classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }
+
+  document.querySelectorAll('.nav-links a').forEach(a => a.addEventListener('click', e => e.preventDefault()));
+</script>
+</body>
+</html>

@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Unstuck</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#F5F8FF;font-family:'Syne',system-ui,sans-serif}
+#root{min-height:100vh;display:flex;justify-content:center;background:#F5F8FF}
+textarea:focus{outline:none;border-color:#2C5FD4!important}
+@keyframes dotPop{0%{r:0;opacity:0}60%{r:8;opacity:1}100%{opacity:1}}
+.dot-enter{animation:dotPop 0.35s ease forwards}
+@keyframes arrowIn{from{opacity:0}to{opacity:1}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script>
+const {useState,useEffect,useCallback} = React;
+const h = React.createElement;
+
+const STORAGE_KEY = "unstuck_data";
+const T = {
+  bg:"#F5F8FF",surface:"#EDF1FB",border:"#D6DFFC",
+  cobalt:"#2C5FD4",cobaltDim:"#A8BFEC",cobaltBg:"#E6EDFB",
+  textPrimary:"#0F1F4A",textSecondary:"#4A5C82",textMuted:"#8A96B8",
+  white:"#FFFFFF",font:"'Syne',system-ui,sans-serif"
+};
+
+const MOODS=[
+  {id:"overwhelmed",label:"Overwhelmed",emoji:"🌊"},
+  {id:"anxious",label:"Anxious",emoji:"⚡"},
+  {id:"numb",label:"Numb",emoji:"🌫️"},
+  {id:"lost",label:"Lost",emoji:"🧭"},
+  {id:"tired",label:"Tired",emoji:"🌙"},
+  {id:"okay",label:"Okay",emoji:"🌤️"},
+  {id:"hopeful",label:"Hopeful",emoji:"🌱"},
+  {id:"calm",label:"Calm",emoji:"🪨"},
+];
+
+const STUCK_REASONS=[
+  {id:"direction",label:"I don't know what direction to take",icon:"↗"},
+  {id:"compare",label:"I compare myself to others constantly",icon:"⟷"},
+  {id:"fear",label:"I'm afraid of making the wrong choice",icon:"◇"},
+  {id:"motivation",label:"I've lost motivation for things I used to love",icon:"○"},
+  {id:"overwhelm",label:"There's too much to figure out at once",icon:"≡"},
+  {id:"identity",label:"I'm not sure who I am anymore",icon:"?"},
+  {id:"connection",label:"I feel disconnected from people around me",icon:"∞"},
+  {id:"pressure",label:"I feel pressure to have it all together",icon:"△"},
+];
+
+const VALUES=[
+  {id:"freedom",label:"Freedom",desc:"Living on your own terms"},
+  {id:"connection",label:"Connection",desc:"Deep, real relationships"},
+  {id:"creativity",label:"Creativity",desc:"Making and expressing things"},
+  {id:"growth",label:"Growth",desc:"Becoming more of yourself"},
+  {id:"impact",label:"Impact",desc:"Making a difference"},
+  {id:"peace",label:"Peace",desc:"Inner calm and stillness"},
+  {id:"adventure",label:"Adventure",desc:"New experiences and discovery"},
+  {id:"honesty",label:"Honesty",desc:"Living and speaking your truth"},
+  {id:"stability",label:"Stability",desc:"Safety and groundedness"},
+];
+
+const REFLECTION_PROMPTS=[
+  "What's been weighing on you most this week?",
+  "When did you last feel truly like yourself?",
+  "What would you do if you weren't afraid of getting it wrong?",
+];
+
+const ACTION_MAP={
+  direction:["Write down 3 things you're curious about — no pressure, just notice.","Spend 10 minutes doing something you loved as a kid."],
+  compare:["Log off social media for the rest of today.","Write one thing that makes you uniquely you."],
+  fear:["Name the worst realistic outcome — then ask: could you survive it?","Take the smallest version of the step you've been avoiding."],
+  motivation:["Do 5 minutes of one thing you used to love, just 5.","Ask yourself: what would feel good, not productive, today?"],
+  overwhelm:["Write everything in your head on paper. Then circle just one thing.","Give yourself permission to only do one thing today."],
+  identity:["Write: 'Right now, I care about...' and see what comes out.","Spend time with someone who knew you before you got overwhelmed."],
+  connection:["Text one person: 'Hey, thinking of you.'","Go somewhere with other humans. You don't have to interact."],
+  pressure:["Say out loud: 'I don't have to have it together yet.'","List 3 ways your life is already working, even a little."],
+};
+
+const INSIGHT_TEXT={
+  overwhelmed:"Feeling overwhelmed often means you care deeply — but you're trying to carry too much at once. You don't need to solve everything today.",
+  anxious:"Anxiety shows up when we're trying to control outcomes we can't predict. You're not broken — you're just bracing for something that hasn't happened yet.",
+  numb:"Numbness is often the mind's way of protecting you. It's okay to feel nothing for a while — the feelings will come back when you're ready.",
+  lost:"Feeling lost is often a sign that you're between chapters, not at the end of the story. You're allowed to not know yet.",
+  tired:"Exhaustion isn't weakness. You've been carrying a lot. Rest is part of the work.",
+  okay:"Being 'okay' is underrated. You're here, showing up, and that matters.",
+  hopeful:"Holding onto hope when things are hard is quietly courageous. Let that feeling guide you.",
+  calm:"Calmness is a resource — protect it and use it well.",
+};
+
+const PHASES=[
+  {num:"01",name:"Orient",tag:"Name where you are",desc:"Identify the specific texture of your stuck-ness — direction, energy, identity, or connection.",threshold:0},
+  {num:"02",name:"Anchor",tag:"Reconnect with what matters",desc:"Rebuild intrinsic motivation by reconnecting with what you genuinely value — not what you think you should.",threshold:7},
+  {num:"03",name:"Move",tag:"One small step",desc:"Translate your values into small, concrete, sustainable actions. Momentum through consistency, not intensity.",threshold:14},
+];
+
+function getPhase(sessions){
+  const c=sessions.length;
+  if(c>=14)return 2;
+  if(c>=7)return 1;
+  return 0;
+}
+
+const defaultData=()=>({sessions:[],streak:0,lastVisit:null});
+function loadData(){try{const r=localStorage.getItem(STORAGE_KEY);return r?{...defaultData(),...JSON.parse(r)}:defaultData()}catch{return defaultData()}}
+function saveData(d){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(d))}catch{}}
+
+const sy=(...objs)=>Object.assign({fontFamily:T.font},...objs);
+const sc={flex:1,display:"flex",flexDirection:"column",padding:"28px 24px 20px",minHeight:"100vh"};
+
+function StepLabel({children}){return h("div",{style:sy({fontSize:11,fontWeight:700,color:T.cobalt,textTransform:"uppercase",letterSpacing:"0.12em",marginBottom:8})},children)}
+function Title({children}){return h("h2",{style:sy({fontSize:26,fontWeight:800,color:T.textPrimary,letterSpacing:"-0.03em",margin:"0 0 8px",lineHeight:1.15})},children)}
+function Sub({children}){return h("p",{style:sy({fontSize:14,color:T.textSecondary,margin:0,lineHeight:1.55})},children)}
+function CardLabel({children}){return h("div",{style:sy({fontSize:10,fontWeight:700,color:T.textMuted,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10})},children)}
+
+function Card({children,tinted,style={}}){
+  return h("div",{style:{background:tinted?T.cobaltBg:T.white,border:tinted?"none":"1.5px solid "+T.border,borderRadius:16,padding:"16px 18px",...style}},children);
+}
+function PrimaryBtn({children,onClick,disabled}){
+  return h("button",{onClick,disabled,style:sy({fontWeight:700,fontSize:15,letterSpacing:"-0.01em",padding:"14px 28px",border:"none",borderRadius:14,background:disabled?T.cobaltDim:T.cobalt,color:T.white,cursor:disabled?"not-allowed":"pointer"})},children);
+}
+function GhostBtn({children,onClick}){
+  return h("button",{onClick,style:sy({fontWeight:600,fontSize:15,padding:"13px 24px",width:"100%",borderRadius:14,border:"1.5px solid "+T.border,background:"transparent",color:T.cobalt,cursor:"pointer"})},children);
+}
+function BackBtn({onClick}){
+  return h("button",{onClick,style:sy({fontWeight:600,fontSize:14,padding:"12px 0",background:"transparent",border:"none",color:T.textMuted,cursor:"pointer"})},"← Back");
+}
+function NavBar({onBack,onNext,nextLabel,nextDisabled}){
+  nextLabel=nextLabel||"Continue →";
+  return h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:16,marginTop:"auto",paddingBottom:8}},
+    onBack?h(BackBtn,{onClick:onBack}):h("div"),
+    onNext&&h(PrimaryBtn,{onClick:onNext,disabled:nextDisabled},nextLabel)
+  );
+}
+function Textarea({value,onChange,placeholder,rows}){
+  rows=rows||3;
+  return h("textarea",{value,onChange,placeholder,rows,style:sy({width:"100%",padding:"12px 14px",background:T.white,border:"1.5px solid "+T.border,borderRadius:12,fontSize:13,color:T.textPrimary,lineHeight:1.6,resize:"none",outline:"none",boxSizing:"border-box"})});
+}
+function ValuePill({children}){
+  return h("span",{style:sy({fontSize:12,fontWeight:600,color:T.cobalt,background:T.cobaltBg,borderRadius:20,padding:"4px 12px"})},children);
+}
+
+function PhaseIndicator({sessions}){
+  const pi=getPhase(sessions);
+  const phase=PHASES[pi];
+  const count=sessions.length;
+  const nextT=PHASES[pi+1]?PHASES[pi+1].threshold:null;
+  const prog=nextT?Math.min((count-phase.threshold)/(nextT-phase.threshold),1):1;
+  return h("div",{style:{border:"1.5px solid "+T.border,borderRadius:16,background:T.white,padding:"14px 16px",marginTop:4}},
+    h("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}},
+      h("div",{style:{display:"flex",alignItems:"center",gap:8}},
+        h("div",{style:{background:T.cobalt,borderRadius:8,padding:"3px 8px"}},
+          h("span",{style:sy({fontSize:10,fontWeight:800,color:T.white,letterSpacing:"0.06em"})},phase.num)
+        ),
+        h("span",{style:sy({fontSize:13,fontWeight:800,color:T.textPrimary,letterSpacing:"-0.02em"})},phase.name)
+      ),
+      h("span",{style:sy({fontSize:10,fontWeight:600,color:T.textMuted})},
+        nextT?(count-phase.threshold)+"/"+(nextT-phase.threshold)+" check-ins":"Complete ✓"
+      )
+    ),
+    h("div",{style:{background:T.surface,borderRadius:4,height:4,marginBottom:10,overflow:"hidden"}},
+      h("div",{style:{height:"100%",width:(prog*100)+"%",background:T.cobalt,borderRadius:4,transition:"width 0.6s ease"}})
+    ),
+    h("p",{style:sy({fontSize:12,color:T.textSecondary,lineHeight:1.55,margin:"0 0 10px"})},phase.desc),
+    h("div",{style:{display:"flex",gap:6}},
+      PHASES.map(function(_,i){return h("div",{key:i,style:{flex:1,height:3,borderRadius:2,background:i<=pi?T.cobalt:T.border,opacity:i===pi?1:i<pi?0.5:0.25}})})
+    )
+  );
+}
+
+function AnimatedPath(){
+  const DOTS=[
+    {cx:10,cy:175,r:6,fill:"#A8BFEC",delay:300},
+    {cx:55,cy:140,r:5,fill:"#90AEDE",delay:650},
+    {cx:100,cy:90,r:5.5,fill:"#7EB0E8",delay:1000},
+    {cx:140,cy:112,r:5,fill:"#6A9FE2",delay:1300},
+    {cx:180,cy:105,r:5.5,fill:"#5A8FE0",delay:1650},
+    {cx:230,cy:62,r:5,fill:"#4A80DC",delay:1950},
+    {cx:280,cy:18,r:5.5,fill:"#3F74D8",delay:2200},
+    {cx:325,cy:12,r:6,fill:"#3368D4",delay:2450},
+    {cx:365,cy:8,r:7,fill:"#2C5FD4",delay:2700},
+  ];
+  const [vis,setVis]=useState([]);
+  const [arrow,setArrow]=useState(false);
+  const pathEl=useCallback(function(node){
+    if(!node)return;
+    var len=node.getTotalLength();
+    node.style.strokeDasharray=len;
+    node.style.strokeDashoffset=len;
+    node.style.transition="none";
+    requestAnimationFrame(function(){requestAnimationFrame(function(){
+      node.style.transition="stroke-dashoffset 2.4s cubic-bezier(0.4,0,0.2,1)";
+      node.style.strokeDashoffset="0";
+    })});
+  },[]);
+  useEffect(function(){
+    var timers=DOTS.map(function(dot,i){return setTimeout(function(){setVis(function(d){return d.concat([i])})},dot.delay)});
+    var at=setTimeout(function(){setArrow(true)},2950);
+    return function(){timers.forEach(clearTimeout);clearTimeout(at)};
+  },[]);
+  return h("svg",{viewBox:"0 0 370 200",style:{position:"absolute",top:0,left:0,width:"100%",height:"100%",overflow:"visible"}},
+    h("path",{ref:pathEl,d:"M10 175 C40 175 55 125 100 90 C135 62 138 120 180 105 C222 90 228 40 280 18 C305 8 335 10 365 8",fill:"none",stroke:T.cobalt,strokeWidth:"4",strokeLinecap:"round",strokeDasharray:"6 5",opacity:"0.55"}),
+    DOTS.map(function(dot,i){
+      return vis.includes(i)?h("circle",{key:i,className:"dot-enter",cx:dot.cx,cy:dot.cy,r:dot.r,fill:dot.fill}):null;
+    }),
+    arrow&&h("g",{style:{animation:"arrowIn 0.3s ease forwards"}},
+      h("line",{x1:365,y1:8,x2:377,y2:-3,stroke:T.cobalt,strokeWidth:"2.5",strokeLinecap:"round"}),
+      h("line",{x1:365,y1:8,x2:378,y2:10,stroke:T.cobalt,strokeWidth:"2.5",strokeLinecap:"round"})
+    )
+  );
+}
+
+function WelcomeScreen({onStart,data}){
+  return h("div",{style:sc},
+    h("div",{style:{paddingTop:48,marginBottom:16}},
+      h("div",{style:sy({fontSize:11,fontWeight:700,color:T.textMuted,letterSpacing:"0.14em",textTransform:"uppercase",marginBottom:20})},
+        "by ",h("span",{style:{color:T.cobalt}},"un"),"stuck"
+      ),
+      h("div",{style:{position:"relative",marginBottom:20}},
+        h(AnimatedPath),
+        h("div",{style:{position:"relative",zIndex:1}},
+          h("div",{style:sy({fontSize:66,fontWeight:800,letterSpacing:"-0.05em",lineHeight:1.0,color:T.textPrimary})},
+            "find",h("br"),"your",h("br"),h("span",{style:{color:T.cobalt}},"way.")
+          )
+        ),
+        h("div",{style:{height:80}})
+      ),
+      h("div",{style:{display:"flex",alignItems:"center",gap:10,marginBottom:20}},
+        h("div",{style:{height:1,flex:1,background:T.border}}),
+        h("span",{style:sy({fontSize:10,fontWeight:600,color:T.textMuted,letterSpacing:"0.08em",textTransform:"uppercase"})},"daily reflection"),
+        h("div",{style:{height:1,flex:1,background:T.border}})
+      )
+    ),
+    h("div",{style:{flex:1}},
+      h("p",{style:sy({fontSize:15,color:T.textSecondary,lineHeight:1.75,margin:"0 0 20px"})},"A 3-minute check-in for when you feel lost, overwhelmed, or just off. No fluff. No login. Just you."),
+      (data.streak||0)>0&&h("div",{style:{display:"inline-flex",alignItems:"center",gap:6,background:T.cobaltBg,borderRadius:20,padding:"6px 14px",marginBottom:12}},
+        h("span",{style:{fontSize:13}},"🔥"),
+        h("span",{style:sy({fontSize:13,color:T.cobalt,fontWeight:700})},data.streak+"-day streak")
+      ),
+      h(PhaseIndicator,{sessions:data.sessions||[]})
+    ),
+    h("div",{style:{display:"flex",flexDirection:"column",gap:10,paddingBottom:36}},
+      h(PrimaryBtn,{onClick:function(){onStart()}},"Begin check-in"),
+      (data.sessions&&data.sessions.length>0)&&h(GhostBtn,{onClick:function(){onStart("insights")}},"See my progress")
+    )
+  );
+}
+
+function MoodScreen({onNext,session,setSession}){
+  const [sel,setSel]=useState(session.mood||null);
+  return h("div",{style:sc},
+    h("div",{style:{marginBottom:24}},h(StepLabel,null,"check-in"),h(Title,null,"How are you feeling right now?"),h(Sub,null,"No right answers. Just notice.")),
+    h("div",{style:{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,flex:1,alignContent:"start",marginBottom:12}},
+      MOODS.map(function(m){return h("button",{key:m.id,onClick:function(){setSel(m.id)},style:{background:sel===m.id?T.cobaltBg:T.white,border:"1.5px solid "+(sel===m.id?T.cobalt+"66":T.border),borderRadius:14,padding:"14px 4px",display:"flex",flexDirection:"column",alignItems:"center",cursor:"pointer",transition:"all 0.15s"}},
+        h("span",{style:{fontSize:22,marginBottom:5,display:"block"}},m.emoji),
+        h("span",{style:sy({fontSize:10,fontWeight:sel===m.id?700:400,color:sel===m.id?T.cobalt:T.textMuted})},m.label)
+      )})
+    ),
+    h(NavBar,{onNext:function(){if(sel){setSession(function(s){return Object.assign({},s,{mood:sel})});onNext()}},nextDisabled:!sel})
+  );
+}
+
+function StuckScreen({onNext,onBack,session,setSession}){
+  const [sel,setSel]=useState(session.stuckReasons||[]);
+  function toggle(id){setSel(function(s){return s.includes(id)?s.filter(function(x){return x!==id}):[...s,id]})}
+  return h("div",{style:sc},
+    h("div",{style:{marginBottom:24}},h(StepLabel,null,"what's going on"),h(Title,null,"What's weighing on you?"),h(Sub,null,"Choose everything that feels true. There's no wrong answer.")),
+    h("div",{style:{display:"flex",flexDirection:"column",gap:8,flex:1,overflowY:"auto",marginBottom:8}},
+      STUCK_REASONS.map(function(r){return h("button",{key:r.id,onClick:function(){toggle(r.id)},style:{display:"flex",alignItems:"center",gap:12,padding:"13px 16px",background:sel.includes(r.id)?T.cobaltBg:T.white,border:"1.5px solid "+(sel.includes(r.id)?T.cobalt+"55":T.border),borderRadius:14,cursor:"pointer",textAlign:"left",transition:"all 0.15s"}},
+        h("span",{style:sy({fontSize:14,fontWeight:700,color:sel.includes(r.id)?T.cobalt:T.cobaltDim,minWidth:16,textAlign:"center"})},r.icon),
+        h("span",{style:sy({fontSize:13,color:T.textSecondary,lineHeight:1.4,flex:1})},r.label),
+        sel.includes(r.id)&&h("span",{style:{color:T.cobalt,fontSize:14,fontWeight:700}},"✓")
+      )})
+    ),
+    h(NavBar,{onBack,onNext:function(){if(sel.length){setSession(function(s){return Object.assign({},s,{stuckReasons:sel})});onNext()}},nextDisabled:!sel.length})
+  );
+}
+
+function ReflectionScreen({onNext,onBack,session,setSession}){
+  const [ans,setAns]=useState(session.reflections||{0:"",1:"",2:""});
+  const filled=Object.values(ans).some(function(v){return v.trim().length>0});
+  return h("div",{style:sc},
+    h("div",{style:{marginBottom:24}},h(StepLabel,null,"reflection"),h(Title,null,"Let it out."),h(Sub,null,"Write as much or as little as you want. This is just for you.")),
+    h("div",{style:{display:"flex",flexDirection:"column",gap:20,flex:1}},
+      REFLECTION_PROMPTS.map(function(prompt,i){return h("div",{key:i},
+        h("label",{style:sy({fontSize:13,fontWeight:600,color:T.textSecondary,lineHeight:1.4,display:"block",marginBottom:8})},prompt),
+        h(Textarea,{value:ans[i]||"",placeholder:"Whatever comes up is enough...",onChange:function(e){setAns(function(a){var n=Object.assign({},a);n[i]=e.target.value;return n})}})
+      )})
+    ),
+    h(NavBar,{onBack,onNext:function(){setSession(function(s){return Object.assign({},s,{reflections:ans})});onNext()},nextLabel:filled?"Continue →":"Skip →"})
+  );
+}
+
+function InsightScreen({onNext,onBack,session}){
+  const mood=MOODS.find(function(m){return m.id===session.mood});
+  const reasons=(session.stuckReasons||[]).map(function(id){return STUCK_REASONS.find(function(r){return r.id===id})}).filter(Boolean);
+  return h("div",{style:sc},
+    h("div",{style:{marginBottom:24}},h(StepLabel,null,"insight"),h(Title,null,"Here's what we see.")),
+    h("div",{style:{flex:1,display:"flex",flexDirection:"column",gap:14}},
+      mood&&h(Card,null,
+        h("div",{style:{display:"flex",alignItems:"center",gap:10,marginBottom:10}},
+          h("span",{style:{fontSize:20}},mood.emoji),
+          h("span",{style:sy({fontSize:10,fontWeight:700,color:T.cobalt,textTransform:"uppercase",letterSpacing:"0.1em"})},"Your mood")
+        ),
+        h("p",{style:sy({fontSize:14,color:T.textSecondary,lineHeight:1.75,margin:0})},INSIGHT_TEXT[mood.id]||"Whatever you're feeling is valid.")
+      ),
+      reasons.length>0&&h(Card,null,
+        h(CardLabel,null,"What's weighing on you"),
+        reasons.map(function(r){return h("div",{key:r.id,style:{display:"flex",alignItems:"flex-start",gap:10,marginBottom:8}},
+          h("span",{style:{color:T.cobalt,fontSize:13,fontWeight:700,marginTop:1}},r.icon),
+          h("span",{style:sy({fontSize:13,color:T.textSecondary,lineHeight:1.5})},r.label)
+        )})
+      ),
+      h(Card,{tinted:true},
+        h("p",{style:sy({fontSize:14,color:T.cobalt,lineHeight:1.8,fontStyle:"italic",margin:0,fontWeight:500})},
+          '"You\'re not behind. You\'re not broken. You\'re in a season of becoming — and those take longer than a semester."'
+        )
+      )
+    ),
+    h(NavBar,{onBack,onNext})
+  );
+}
+
+function ValuesScreen({onNext,onBack,session,setSession}){
+  const [sel,setSel]=useState(session.values||[]);
+  function toggle(id){setSel(function(s){
+    if(s.includes(id))return s.filter(function(x){return x!==id});
+    if(s.length>=3)return s;
+    return s.concat([id]);
+  })}
+  return h("div",{style:sc},
+    h("div",{style:{marginBottom:24}},h(StepLabel,null,"values"),h(Title,null,"What matters most to you?"),h(Sub,null,'Pick up to 3. Trust your gut, not your "should."')),
+    h("div",{style:{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,flex:1,alignContent:"start",marginBottom:8}},
+      VALUES.map(function(v){
+        var active=sel.includes(v.id);
+        return h("button",{key:v.id,onClick:function(){toggle(v.id)},style:{background:active?T.cobaltBg:T.white,border:"1.5px solid "+(active?T.cobalt+"66":T.border),borderRadius:14,padding:"12px 10px",textAlign:"left",cursor:"pointer",transition:"all 0.15s",opacity:(!active&&sel.length>=3)?0.35:1}},
+          h("div",{style:sy({fontSize:13,fontWeight:700,color:active?T.cobalt:T.textPrimary,marginBottom:3})},v.label),
+          h("div",{style:sy({fontSize:11,color:T.textMuted,lineHeight:1.3})},v.desc)
+        );
+      })
+    ),
+    sel.length>0&&h("div",{style:sy({textAlign:"center",fontSize:12,fontWeight:600,color:T.cobalt,marginBottom:4})},
+      3-sel.length>0?(3-sel.length)+" more to go":"Perfect — these are yours right now."
+    ),
+    h(NavBar,{onBack,onNext:function(){if(sel.length){setSession(function(s){return Object.assign({},s,{values:sel})});onNext()}},nextDisabled:!sel.length})
+  );
+}
+
+function ActionScreen({onNext,onBack,session,setSession}){
+  var primaryReason=(session.stuckReasons||[])[0];
+  var suggestions=primaryReason?(ACTION_MAP[primaryReason]||[]):[];
+  var displayActions=suggestions.length?suggestions:[
+    "Take 5 slow breaths and write down one thing that's true today.",
+    "Send one message to someone you've been meaning to reach out to.",
+  ];
+  const [chosen,setChosen]=useState(session.action||null);
+  var customVal=typeof chosen==="string"&&!displayActions.includes(chosen)?chosen:"";
+  return h("div",{style:sc},
+    h("div",{style:{marginBottom:24}},h(StepLabel,null,"one step"),h(Title,null,"Your next small step."),h(Sub,null,"You don't need a plan. Just one thing. Pick what feels doable today.")),
+    h("div",{style:{flex:1,display:"flex",flexDirection:"column",gap:10}},
+      displayActions.map(function(a,i){return h("button",{key:i,onClick:function(){setChosen(a)},style:{display:"flex",alignItems:"flex-start",gap:14,padding:"16px",background:chosen===a?T.cobaltBg:T.white,border:"1.5px solid "+(chosen===a?T.cobalt+"55":T.border),borderRadius:16,cursor:"pointer",textAlign:"left",transition:"all 0.15s"}},
+        h("div",{style:{width:28,height:28,borderRadius:"50%",flexShrink:0,background:chosen===a?T.cobalt:T.cobaltBg,display:"flex",alignItems:"center",justifyContent:"center"}},
+          h("span",{style:sy({fontSize:12,fontWeight:700,color:chosen===a?T.white:T.cobalt})},i+1)
+        ),
+        h("p",{style:sy({fontSize:13,color:T.textSecondary,lineHeight:1.65,margin:0,flex:1})},a)
+      )}),
+      h("div",{style:{marginTop:4}},
+        h("label",{style:sy({fontSize:12,fontWeight:600,color:T.textMuted,marginBottom:6,display:"block"})},"Or write your own:"),
+        h(Textarea,{value:customVal,placeholder:"Something small you can do today...",rows:2,onChange:function(e){setChosen(e.target.value)}})
+      )
+    ),
+    h(NavBar,{onBack,onNext:function(){if(chosen){setSession(function(s){return Object.assign({},s,{action:chosen})});onNext()}},nextDisabled:!chosen})
+  );
+}
+
+function SummaryScreen({onFinish,onBack,session}){
+  var mood=MOODS.find(function(m){return m.id===session.mood});
+  var vals=(session.values||[]).map(function(id){return VALUES.find(function(v){return v.id===id})}).filter(Boolean);
+  var date=new Date().toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"});
+  return h("div",{style:sc},
+    h("div",{style:{marginBottom:24}},h(StepLabel,null,"your check-in"),h(Title,null,"You showed up. 🌱"),h("p",{style:sy({fontSize:12,color:T.textMuted,margin:0})},date)),
+    h("div",{style:{flex:1,display:"flex",flexDirection:"column",gap:12}},
+      h(Card,null,
+        h(CardLabel,null,"How you were feeling"),
+        h("div",{style:{display:"flex",alignItems:"center",gap:8}},
+          h("span",{style:{fontSize:18}},mood?mood.emoji:""),
+          h("span",{style:sy({fontSize:15,fontWeight:700,color:T.textPrimary})},mood?mood.label:"")
+        )
+      ),
+      vals.length>0&&h(Card,null,
+        h(CardLabel,null,"What you're anchored to"),
+        h("div",{style:{display:"flex",flexWrap:"wrap",gap:6,marginTop:2}},vals.map(function(v){return h(ValuePill,{key:v.id},v.label)}))
+      ),
+      session.action&&h(Card,{tinted:true},
+        h(CardLabel,null,"Your one step"),
+        h("p",{style:sy({fontSize:14,color:T.cobalt,lineHeight:1.65,margin:0,fontWeight:500})},session.action)
+      ),
+      h(Card,null,h("p",{style:sy({fontSize:14,color:T.textSecondary,fontStyle:"italic",lineHeight:1.75,margin:0})},"Progress isn't always visible. The fact that you reflected today is already enough."))
+    ),
+    h(NavBar,{onBack,onNext:onFinish,nextLabel:"See my progress →"})
+  );
+}
+
+function ProgressScreen({onBack,data}){
+  var sessions=data.sessions||[];
+  var valueCounts={};
+  sessions.forEach(function(s){(s.values||[]).forEach(function(v){valueCounts[v]=(valueCounts[v]||0)+1})});
+  var topValues=Object.entries(valueCounts).sort(function(a,b){return b[1]-a[1]}).slice(0,3).map(function(e){return VALUES.find(function(v){return v.id===e[0]})}).filter(Boolean);
+  var last7=sessions.slice(-7);
+  var phaseIdx=getPhase(sessions);
+
+  return h("div",{style:sc},
+    h("div",{style:{marginBottom:24}},h(StepLabel,null,"progress"),h(Title,null,"Your journey so far.")),
+    sessions.length===0
+      ?h("div",{style:{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:14}},
+          h("span",{style:{fontSize:44}},"🌱"),
+          h("p",{style:sy({fontSize:15,color:T.textMuted,textAlign:"center",lineHeight:1.65})},"No check-ins yet.",h("br"),"Your first one is the most important.")
+        )
+      :h("div",{style:{flex:1,display:"flex",flexDirection:"column",gap:14,overflowY:"auto"}},
+          h("div",{style:{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}},
+            [{num:sessions.length,label:"check-ins"},{num:data.streak||0,label:"day streak"},{num:Math.min(sessions.length,7),label:"this week"}]
+              .map(function(item){return h("div",{key:item.label,style:{background:T.cobaltBg,borderRadius:14,padding:"16px 10px",textAlign:"center"}},
+                h("div",{style:sy({fontSize:28,fontWeight:800,color:T.cobalt,letterSpacing:"-0.04em"})},item.num),
+                h("div",{style:sy({fontSize:10,fontWeight:600,color:T.cobaltDim,marginTop:3,textTransform:"uppercase",letterSpacing:"0.08em"})},item.label)
+              )})
+          ),
+          h(Card,null,
+            h(CardLabel,null,"Your framework journey"),
+            h("div",{style:{display:"flex",flexDirection:"column",gap:10,marginTop:4}},
+              PHASES.map(function(p,i){
+                var isActive=i===phaseIdx;
+                var isDone=i<phaseIdx;
+                return h("div",{key:i,style:{display:"flex",alignItems:"flex-start",gap:10,opacity:i>phaseIdx?0.38:1}},
+                  h("div",{style:{width:28,height:28,borderRadius:8,flexShrink:0,background:isDone?T.cobalt:isActive?T.cobaltBg:T.surface,border:"1.5px solid "+(isActive?T.cobalt:isDone?T.cobalt:T.border),display:"flex",alignItems:"center",justifyContent:"center"}},
+                    isDone
+                      ?h("svg",{width:12,height:12,viewBox:"0 0 12 12",fill:"none"},h("path",{d:"M2 6L5 9L10 3",stroke:"white",strokeWidth:"1.8",strokeLinecap:"round",strokeLinejoin:"round"}))
+                      :h("span",{style:sy({fontSize:9,fontWeight:800,color:isActive?T.cobalt:T.textMuted})},p.num)
+                  ),
+                  h("div",{style:{flex:1}},
+                    h("div",{style:{display:"flex",alignItems:"baseline",gap:6,marginBottom:2}},
+                      h("span",{style:sy({fontSize:13,fontWeight:800,color:isActive?T.textPrimary:T.textSecondary,letterSpacing:"-0.02em"})},p.name),
+                      h("span",{style:sy({fontSize:10,fontWeight:600,color:T.textMuted})},p.tag)
+                    ),
+                    isActive&&h("p",{style:sy({fontSize:11,color:T.textSecondary,lineHeight:1.5,margin:0})},p.desc)
+                  )
+                );
+              })
+            )
+          ),
+          last7.length>0&&h(Card,null,
+            h(CardLabel,null,"Recent moods"),
+            h("div",{style:{display:"flex",gap:10,marginTop:4,flexWrap:"wrap"}},
+              last7.map(function(s,i){
+                var m=MOODS.find(function(x){return x.id===s.mood});
+                return m?h("div",{key:i,style:{textAlign:"center"}},h("div",{style:{fontSize:22}},m.emoji),h("div",{style:sy({fontSize:10,color:T.textMuted,marginTop:2})},m.label)):null;
+              })
+            )
+          ),
+          topValues.length>0&&h(Card,null,
+            h(CardLabel,null,"Your recurring values"),
+            h("div",{style:{display:"flex",flexWrap:"wrap",gap:6,marginTop:4}},topValues.map(function(v){return h(ValuePill,{key:v.id},v.label)}))
+          ),
+          sessions.slice(-3).reverse().map(function(s,i){
+            var m=MOODS.find(function(x){return x.id===s.mood});
+            var d=new Date(s.date).toLocaleDateString("en-US",{month:"short",day:"numeric"});
+            return h(Card,{key:i},
+              h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:s.action?8:0}},
+                h("span",{style:sy({fontSize:12,fontWeight:600,color:T.textMuted})},d),
+                m&&h("span",{style:{fontSize:18}},m.emoji)
+              ),
+              s.action&&h("p",{style:sy({fontSize:12,color:T.textSecondary,lineHeight:1.5,margin:0})},"Step: "+s.action)
+            );
+          })
+        ),
+    h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:16,marginTop:"auto",paddingBottom:8}},
+      h(BackBtn,{onClick:onBack}),
+      h("button",{onClick:onBack,style:{width:42,height:42,borderRadius:12,background:T.cobaltBg,border:"1.5px solid "+T.border,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}},
+        h("svg",{width:18,height:18,viewBox:"0 0 18 18",fill:"none"},
+          h("path",{d:"M2 8L9 2L16 8V16H12V11H6V16H2V8Z",fill:T.cobalt,stroke:T.cobalt,strokeWidth:"1",strokeLinejoin:"round"})
+        )
+      )
+    )
+  );
+}
+
+var SCREENS=["welcome","mood","stuck","reflection","insight","values","action","summary","insights"];
+
+function App(){
+  const [data,setData]=useState(loadData);
+  const [screen,setScreen]=useState("welcome");
+  const [session,setSession]=useState({date:new Date().toISOString()});
+
+  useEffect(function(){saveData(data)},[data]);
+
+  function go(s){setScreen(s)}
+  function next(){var i=SCREENS.indexOf(screen);if(i<SCREENS.length-1)setScreen(SCREENS[i+1])}
+  function back(){var i=SCREENS.indexOf(screen);if(i>0)setScreen(SCREENS[i-1])}
+
+  function finishSession(){
+    var today=new Date().toDateString();
+    var yesterday=new Date(Date.now()-86400000).toDateString();
+    var newStreak=data.lastVisit===yesterday?(data.streak||0)+1:data.lastVisit===today?data.streak:1;
+    setData(function(d){return Object.assign({},d,{sessions:(d.sessions||[]).concat([Object.assign({},session,{date:new Date().toISOString()})]),streak:newStreak,lastVisit:today})});
+    setScreen("insights");
+  }
+
+  var progress=(screen==="welcome"||screen==="insights")?null:(SCREENS.indexOf(screen)-1)/6;
+
+  return h("div",{style:{minHeight:"100vh",background:T.bg,display:"flex",justifyContent:"center",fontFamily:T.font}},
+    h("div",{style:{width:"100%",maxWidth:420,minHeight:"100vh",background:T.bg,display:"flex",flexDirection:"column"}},
+      progress!==null&&h("div",{style:{height:3,background:T.border,flexShrink:0}},
+        h("div",{style:{height:"100%",background:T.cobalt,borderRadius:"0 2px 2px 0",width:(progress*100)+"%",transition:"width 0.5s cubic-bezier(0.4,0,0.2,1)"}})
+      ),
+      screen==="welcome"&&h(WelcomeScreen,{onStart:function(s){s==="insights"?go("insights"):go("mood")},data}),
+      screen==="mood"&&h(MoodScreen,{onNext:next,session,setSession}),
+      screen==="stuck"&&h(StuckScreen,{onNext:next,onBack:back,session,setSession}),
+      screen==="reflection"&&h(ReflectionScreen,{onNext:next,onBack:back,session,setSession}),
+      screen==="insight"&&h(InsightScreen,{onNext:next,onBack:back,session}),
+      screen==="values"&&h(ValuesScreen,{onNext:next,onBack:back,session,setSession}),
+      screen==="action"&&h(ActionScreen,{onNext:next,onBack:back,session,setSession}),
+      screen==="summary"&&h(SummaryScreen,{onFinish:finishSession,onBack:back,session}),
+      screen==="insights"&&h(ProgressScreen,{onBack:function(){go("welcome")},data})
+    )
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(h(App));
+</script>
+</body>
+</html>
